@@ -19,34 +19,35 @@ import com.assessment.speer.service.UserService;
 import com.assessment.speer.util.JWTUtil;
 
 @Component
-public class JwtAuthenticateFilter extends OncePerRequestFilter{
+public class JwtAuthenticateFilter extends OncePerRequestFilter {
 
 	@Autowired
 	private JWTUtil jwtUtil;
 
 	@Autowired
 	private UserService userService;
-	
+
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
-	 
+
 		String authorizationHeader = request.getHeader("Authorization");
-		
+
 		String userName = null;
 		String jwtToken = null;
-		
-		if(authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+
+		if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
 			jwtToken = authorizationHeader.substring(7);
 			userName = jwtUtil.getUsername(jwtToken);
 		}
-		
-		if(userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+
+		if (userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 			UserDetails userDetails = this.userService.loadUserByUsername(userName);
-			if(jwtUtil.validateToken(jwtToken, userDetails)) {
-				UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = 
-						new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-				usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+			if (jwtUtil.validateToken(jwtToken, userDetails)) {
+				UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
+						userDetails, null, userDetails.getAuthorities());
+				usernamePasswordAuthenticationToken
+						.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 				SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
 			}
 		}

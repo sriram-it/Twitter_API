@@ -23,13 +23,7 @@ import com.assessment.speer.util.JWTUtil;
 public class UserController {
 
 	@Autowired
-	private AuthenticationManager authenticationManager;
-
-	@Autowired
 	private UserService userService;
-
-	@Autowired
-	private JWTUtil jwtUtil;
 
 	@RequestMapping(path = "/signUp", method = RequestMethod.POST)
 	public ResponseEntity<UserDto> createUser(@RequestBody UserDto userDto) {
@@ -38,17 +32,17 @@ public class UserController {
 	}
 
 	@RequestMapping(value = "/login", method = RequestMethod.POST)
-	public ResponseEntity<AuthenticateResponseDto> generateAuthenticateToken(@RequestBody AuthenticateRequestDto authenticateRequestDto){
+	public ResponseEntity<AuthenticateResponseDto> generateAuthenticateToken(
+			@RequestBody AuthenticateRequestDto authenticateRequestDto) {
 		try {
-			UserDetails userDetails = userService.loadUserByUsername(authenticateRequestDto.getUserName());
-			authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
-					authenticateRequestDto.getUserName(), authenticateRequestDto.getPassword()));
-			String jwt = jwtUtil.generatedToken(userDetails);
-			return new ResponseEntity<AuthenticateResponseDto>(new AuthenticateResponseDto(jwt, "Success"), HttpStatus.OK);
+			return new ResponseEntity<AuthenticateResponseDto>(
+					userService.generateAuthenticateToken(authenticateRequestDto), HttpStatus.OK);
 		} catch (BadCredentialsException exception) {
-			return new ResponseEntity<AuthenticateResponseDto>(new AuthenticateResponseDto("Incorrect Password"), HttpStatus.UNAUTHORIZED);
+			return new ResponseEntity<AuthenticateResponseDto>(new AuthenticateResponseDto("Incorrect Password"),
+					HttpStatus.UNAUTHORIZED);
 		} catch (UsernameNotFoundException exception) {
-			return new ResponseEntity<AuthenticateResponseDto>(new AuthenticateResponseDto(exception.getMessage()), HttpStatus.UNAUTHORIZED);
+			return new ResponseEntity<AuthenticateResponseDto>(new AuthenticateResponseDto(exception.getMessage()),
+					HttpStatus.UNAUTHORIZED);
 		}
 	}
 }

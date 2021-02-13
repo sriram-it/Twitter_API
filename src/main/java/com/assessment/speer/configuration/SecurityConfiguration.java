@@ -16,39 +16,36 @@ import com.assessment.speer.filter.JwtAuthenticateFilter;
 import com.assessment.speer.service.UserService;
 
 @EnableWebSecurity
-public class SecurityConfiguration extends WebSecurityConfigurerAdapter{
-	
+public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
+
 	@Autowired
 	private UserService userService;
-	
+
 	@Autowired
 	private JwtAuthenticateFilter jwtAuthenticateFilter;
-	
+
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 		auth.userDetailsService(userService);
 	}
-	
+
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
-		http.csrf().disable().authorizeRequests()
-			.antMatchers("/login").permitAll()
-			.antMatchers("/signUp").permitAll()
-			.anyRequest().authenticated()
-			.and()
-			.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+		http.csrf().disable().authorizeRequests().antMatchers("/login").permitAll().antMatchers("/signUp").permitAll()
+				.anyRequest().authenticated().and().sessionManagement()
+				.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 		http.addFilterBefore(jwtAuthenticateFilter, UsernamePasswordAuthenticationFilter.class);
 	}
-	
+
 	@Override
 	@Bean
 	public AuthenticationManager authenticationManagerBean() throws Exception {
 		return super.authenticationManagerBean();
 	}
-	
+
 	@Bean
 	public PasswordEncoder passwordEncoder() {
-		return  NoOpPasswordEncoder.getInstance();
+		return NoOpPasswordEncoder.getInstance();
 	}
 
 }
