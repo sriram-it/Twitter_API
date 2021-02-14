@@ -5,12 +5,16 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.persistence.EntityExistsException;
+import javax.xml.bind.ValidationException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -40,7 +44,7 @@ public class UserService implements UserDetailsService {
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 		UserEntity respEntity = userRepository.findByUserName(username);
 		if (respEntity == null) {
-			throw new UsernameNotFoundException("UserName not found");
+			throw new UsernameNotFoundException("Username not found");
 		}
 		return new User(respEntity.getUserName(), respEntity.getPassword(), new ArrayList<>());
 	}
@@ -52,7 +56,9 @@ public class UserService implements UserDetailsService {
 			authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
 					authenticateRequestDto.getUserName(), authenticateRequestDto.getPassword()));
 			String jwt = jwtUtil.generatedToken(userDetails);
-			return new AuthenticateResponseDto(jwt, "Success");
+			AuthenticateResponseDto authenticateResponseDto = new AuthenticateResponseDto();
+			authenticateResponseDto.setToken(jwt);
+			return authenticateResponseDto;
 		} catch (BadCredentialsException exception) {
 			throw new BadCredentialsException("Incorrect Password");
 		} catch (UsernameNotFoundException exception) {
@@ -60,15 +66,8 @@ public class UserService implements UserDetailsService {
 		}
 	}
 
-	public UserDto createUser(String userName, String password) {
-		try {
-			validateFields(userName, password);
-		} catch (Exception e) {
-			UserDto failRespDto = new UserDto();
-			failRespDto.setMessage(e.getMessage());
-			return failRespDto;
-		}
-
+	public UserDto createUser(String userName, String password) throws ValidationException, EntityExistsException {
+		validateFields(userName, password);
 		UserEntity respEntity = userRepository.findByUserName(userName);
 		if (respEntity == null) {
 			UserEntity userEntity = new UserEntity();
@@ -76,39 +75,45 @@ public class UserService implements UserDetailsService {
 			userEntity.setPassword(password);
 
 			UserEntity userResponseEntity = userRepository.save(userEntity);
-			UserDto successRespDto = getUserDto(userResponseEntity);
-			successRespDto.setMessage("success");
-			return successRespDto;
+			return convertToUserDto(userResponseEntity);
 		} else {
-			UserDto failRespDto = new UserDto();
-			failRespDto.setMessage("Username is already exist");
-			return failRespDto;
+			throw new EntityExistsException("Username is already exist");
 		}
 
 	}
 
-	public void validateFields(String userName, String password) throws Exception {
+	public void validateFields(String userName, String password) throws ValidationException {
 		if (Objects.isNull(userName) || userName.isEmpty()) {
-			throw new Exception("Username should not be empty");
+			throw new ValidationException("Username should not be empty");
 		} else if (Objects.isNull(password) || password.isEmpty()) {
-			throw new Exception("Password should not be empty");
+			throw new ValidationException("Password should not be empty");
 		}
-
 		String passwordRegex = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,20}$";
 		Pattern pattern = Pattern.compile(passwordRegex);
 		Matcher matcher = pattern.matcher(password);
 		if (!matcher.matches()) {
-			throw new Exception(
-					"Password should atleast has 8 characters. It must contains one lowercase, one uppercase, one symbol, and one number");
+			throw new ValidationException(
+					"Password should atleast has 8 characters. It must contain a lowercase, an uppercase, a symbol, and a number");
 		}
 	}
 
-	public UserDto getUserDto(UserEntity userEntity) {
+	public UserDto convertToUserDto(UserEntity userEntity) {
 		UserDto userDto = new UserDto();
 		userDto.setId(userEntity.getId());
 		userDto.setUserName(userEntity.getUserName());
-		userDto.setPassword(userEntity.getPassword());
 		return userDto;
+	}
+
+	public UserDto findUser(String userName) throws UsernameNotFoundException {
+		UserEntity respEntity = userRepository.findByUserName(userName);
+		if(respEntity == null) {
+			throw new UsernameNotFoundException("User is not found");
+		} 
+		return convertToUserDto(respEntity);
+	}
+	
+	public UserEntity getCurrentUser() {
+		return userRepository.findByUserName(SecurityContextHolder.getContext().getAuthentication().getName());
 	}
 
 }

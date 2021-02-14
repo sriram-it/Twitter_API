@@ -4,30 +4,41 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 @JsonInclude(Include.NON_NULL)
-public class AuthenticateResponseDto {
+public class TweetDto {
 
-	private String token;
+	private Long id;
+	
+	private String content;
+	
 	private String message;
 
-	public AuthenticateResponseDto() {
+	public TweetDto() {
 	}
-
-	public AuthenticateResponseDto(String message) {
+	
+	public TweetDto(String message) {
 		this.message = message;
 	}
-
-	public String getToken() {
-		return token;
+	
+	public Long getId() {
+		return id;
 	}
 
-	public void setToken(String token) {
-		this.token = token;
+	public void setId(Long id) {
+		this.id = id;
 	}
 
+	public String getContent() {
+		return content;
+	}
+
+	public void setContent(String content) {
+		this.content = content;
+	}
+	
 	public String getMessage() {
 		return message;
 	}
-
+	
 	public void setMessage(String message) {
 		this.message = message;
 	}
